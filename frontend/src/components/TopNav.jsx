@@ -50,14 +50,14 @@ export default function TopNav({
   };
 
   return (
-    <header className="w-full px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30 bg-white/80 dark:bg-surface-container-lowest/80 backdrop-blur-xl border-b border-purple-100/70 dark:border-outline-variant/20 shadow-xs transition-colors">
+    <header className="w-full px-4 sm:px-6 py-3 flex-shrink-0 flex items-center justify-between sticky top-0 z-30 bg-white/80 dark:bg-surface-container-lowest/80 backdrop-blur-xl border-b border-purple-100/70 dark:border-outline-variant/20 shadow-xs transition-colors select-none">
       {/* Left: Sidebar Toggle & Brand */}
       <div className="flex items-center space-x-3">
         {/* Toggle Left Sessions Sidebar */}
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="p-1.5 rounded-xl hover:bg-purple-50 dark:hover:bg-surface-container text-gray-500 hover:text-gray-900 dark:hover:text-on-surface transition-colors"
+            className="p-1.5 rounded-xl hover:bg-purple-50 dark:hover:bg-surface-container text-gray-500 hover:text-gray-900 dark:hover:text-on-surface transition-colors cursor-pointer"
             title="Toggle Sessions Sidebar"
           >
             <PanelLeft className="w-5 h-5" />

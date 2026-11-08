@@ -140,10 +140,7 @@ export default function MemoryInspector({
             filteredMemories.map((m) => {
               const badge = getCategoryBadge(m.category);
               const isHighlighted = highlightedMemoryId === m.id;
-              const quote =
-                m.evidence_links && m.evidence_links.length > 0
-                  ? m.evidence_links[0].exact_source_span
-                  : null;
+              const hasEvidenceLinks = m.evidence_links && m.evidence_links.length > 0;
 
               return (
                 <div
@@ -163,7 +160,7 @@ export default function MemoryInspector({
 
                     <button
                       onClick={() => onDeleteMemory && onDeleteMemory(m.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-error-container/20 transition-all duration-150"
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-error-container/20 transition-all duration-150 cursor-pointer"
                       title="Forget this memory"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -175,19 +172,62 @@ export default function MemoryInspector({
                     {m.canonical_content}
                   </p>
 
-                  {/* Verbatim Spoken Evidence Quote */}
-                  {quote && (
-                    <p className="text-xs italic text-gray-600 dark:text-on-surface-variant mt-2 pt-2 border-t border-purple-50 dark:border-outline-variant/10">
-                      “{quote}”
-                    </p>
+                  {/* All Verbatim Spoken Evidence Items (Evidence #1, Evidence #2, ...) */}
+                  {hasEvidenceLinks ? (
+                    <div className="mt-3 pt-2.5 border-t border-purple-100/70 dark:border-outline-variant/20 space-y-2">
+                      {m.evidence_links.map((ev, evIdx) => (
+                        <div
+                          key={ev.id || evIdx}
+                          className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-surface-container/60 border border-purple-100/60 dark:border-outline-variant/30 text-xs"
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-semibold text-purple-700 dark:text-primary mb-1">
+                            <span className="flex items-center gap-1.5 uppercase tracking-wider">
+                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                              Evidence #{evIdx + 1}
+                            </span>
+                            {ev.extracted_at && (
+                              <span className="text-gray-400 dark:text-outline font-normal">
+                                {new Date(ev.extracted_at).toLocaleDateString([], {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          <p className="italic text-gray-700 dark:text-on-surface-variant font-medium leading-relaxed">
+                            “{ev.exact_source_span}”
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    (m.source_span || m.exact_source_span) && (
+                      <div className="mt-3 pt-2.5 border-t border-purple-100/70 dark:border-outline-variant/20">
+                        <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-surface-container/60 border border-purple-100/60 dark:border-outline-variant/30 text-xs">
+                          <span className="block text-[10px] font-semibold text-purple-700 dark:text-primary mb-1 uppercase tracking-wider">
+                            Evidence #1
+                          </span>
+                          <p className="italic text-gray-700 dark:text-on-surface-variant font-medium leading-relaxed">
+                            “{m.source_span || m.exact_source_span}”
+                          </p>
+                        </div>
+                      </div>
+                    )
                   )}
 
                   {/* Provenance Footer */}
-                  <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400 dark:text-outline">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-primary" />
-                    <span className="text-[11px] text-gray-500 dark:text-on-surface-variant font-medium">
-                      Reinforced {m.support_count || 1} {m.support_count === 1 ? "time" : "times"} · High confidence
-                    </span>
+                  <div className="mt-3 flex items-center justify-between text-xs text-gray-400 dark:text-outline">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-primary" />
+                      <span className="text-[11px] text-gray-500 dark:text-on-surface-variant font-medium">
+                        Reinforced {m.support_count || 1} {m.support_count === 1 ? "time" : "times"} · High confidence
+                      </span>
+                    </div>
+                    {hasEvidenceLinks && m.evidence_links.length > 1 && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-primary/20 text-purple-800 dark:text-primary">
+                        {m.evidence_links.length} Proofs
+                      </span>
+                    )}
                   </div>
                 </div>
               );

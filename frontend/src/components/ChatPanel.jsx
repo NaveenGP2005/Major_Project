@@ -20,6 +20,7 @@ export default function ChatPanel({
   onSendMessage,
   isLoading,
   activeSessionTitle,
+  memories = [],
 }) {
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -272,38 +273,84 @@ export default function ChatPanel({
                           {citations.map((cite, cIdx) => {
                             const citeId = cite.id || `cite-${cIdx}`;
                             const isPopoverOpen = activePopoverCiteId === citeId;
-                            const quoteText =
+                            const fullMem = memories.find((m) => m.id === cite.id);
+                            const evLinks =
+                              fullMem?.evidence_links && fullMem.evidence_links.length > 0
+                                ? fullMem.evidence_links
+                                : cite.evidence_links && cite.evidence_links.length > 0
+                                ? cite.evidence_links
+                                : [];
+                            const fallbackQuote =
                               cite.source_span ||
                               cite.exact_source_span ||
-                              (cite.evidence_links && cite.evidence_links.length > 0
-                                ? cite.evidence_links[0].exact_source_span
-                                : "Mentioned in previous conversations");
+                              fullMem?.source_span ||
+                              fullMem?.canonical_content ||
+                              "Mentioned in previous conversations";
 
                             return (
                               <div key={citeId} className="relative inline-block" onClick={(e) => e.stopPropagation()}>
                                 {/* STITCH EVIDENCE POPOVER FLOATING CARD */}
                                 {isPopoverOpen && (
-                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-30 w-72 sm:w-80 p-4 rounded-2xl bg-white/95 dark:bg-surface-container-low/95 border border-purple-200/80 dark:border-outline-variant/40 backdrop-blur-2xl shadow-[0_16px_40px_rgba(143,123,232,0.22)] flex flex-col space-y-2 animate-in fade-in zoom-in-95 duration-150 text-left">
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-30 w-72 sm:w-84 max-w-[90vw] p-4 rounded-2xl bg-white/95 dark:bg-surface-container-low/95 border border-purple-200/80 dark:border-outline-variant/40 backdrop-blur-2xl shadow-[0_16px_40px_rgba(143,123,232,0.22)] flex flex-col space-y-2.5 animate-in fade-in zoom-in-95 duration-150 text-left">
                                     {/* Header */}
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-1.5 text-purple-600 dark:text-primary font-semibold text-xs uppercase tracking-wider">
                                         <Quote className="w-4 h-4 fill-current" />
-                                        <span>Direct Memory</span>
+                                        <span>Grounded Evidence ({evLinks.length || 1})</span>
                                       </div>
-                                      <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-secondary-container/20 dark:text-secondary">
+                                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-secondary-container/20 dark:text-secondary">
                                         Verified
                                       </span>
                                     </div>
 
-                                    {/* Verbatim Spoken Quote */}
-                                    <p className="text-sm font-medium text-gray-900 dark:text-on-surface leading-snug italic">
-                                      “{quoteText}”
-                                    </p>
+                                    {/* Memory Canonical Proposition */}
+                                    <div className="text-xs font-semibold text-gray-900 dark:text-on-surface">
+                                      {cite.canonical_content}
+                                    </div>
+
+                                    {/* Verbatim Spoken Quotes Stack (Evidence #1, Evidence #2, ...) */}
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                      {evLinks.length > 0 ? (
+                                        evLinks.map((ev, evIdx) => (
+                                          <div
+                                            key={ev.id || evIdx}
+                                            className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-surface-container/60 border border-purple-100/60 dark:border-outline-variant/30 text-xs"
+                                          >
+                                            <div className="flex items-center justify-between text-[10px] font-semibold text-purple-700 dark:text-primary mb-1">
+                                              <span className="flex items-center gap-1 uppercase tracking-wider">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                                                Evidence #{evIdx + 1}
+                                              </span>
+                                              {ev.extracted_at && (
+                                                <span className="text-gray-400 dark:text-outline font-normal">
+                                                  {new Date(ev.extracted_at).toLocaleDateString([], {
+                                                    month: "short",
+                                                    day: "numeric",
+                                                  })}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <p className="italic text-gray-800 dark:text-on-surface leading-snug font-medium">
+                                              “{ev.exact_source_span}”
+                                            </p>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-surface-container/60 border border-purple-100/60 dark:border-outline-variant/30 text-xs">
+                                          <span className="block text-[10px] font-semibold text-purple-700 dark:text-primary mb-1 uppercase tracking-wider">
+                                            Evidence #1
+                                          </span>
+                                          <p className="italic text-gray-800 dark:text-on-surface leading-snug font-medium">
+                                            “{fallbackQuote}”
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
 
                                     {/* Provenance Tag */}
-                                    <div className="flex items-center gap-1.5 pt-1 text-[11px] text-gray-500 dark:text-on-surface-variant">
+                                    <div className="flex items-center gap-1.5 pt-1 text-[11px] text-gray-500 dark:text-on-surface-variant border-t border-purple-100/60 dark:border-outline-variant/20">
                                       <History className="w-3.5 h-3.5 text-purple-500" />
-                                      <span>✦ Grounded from your conversation</span>
+                                      <span>✦ Reinforced {fullMem?.support_count || 1} {fullMem?.support_count === 1 ? "time" : "times"}</span>
                                     </div>
 
                                     {/* Ethereal Downward Arrow Caret */}
@@ -327,6 +374,11 @@ export default function ChatPanel({
                                 >
                                   <span className={`w-1.5 h-1.5 rounded-full ${isPopoverOpen ? "bg-white" : "bg-purple-500"}`}></span>
                                   <span className="truncate max-w-[240px]">✦ {cite.canonical_content}</span>
+                                  {evLinks.length > 1 && (
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-200/60 dark:bg-primary/30 text-purple-800 dark:text-primary font-bold">
+                                      {evLinks.length}
+                                    </span>
+                                  )}
                                 </button>
                               </div>
                             );

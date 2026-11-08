@@ -63,8 +63,38 @@ export default function EvidenceModal({
             </p>
           </div>
 
-          {/* Verbatim Spoken Evidence Quote */}
-          {quoteSpan && (
+          {/* Verbatim Spoken Evidence Quotes Stack */}
+          {memory.evidence_links && memory.evidence_links.length > 0 ? (
+            <div className="space-y-2">
+              <span className="text-[11px] font-semibold text-purple-700 dark:text-primary flex items-center gap-1.5">
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>Verbatim Spoken Evidence ({memory.evidence_links.length})</span>
+              </span>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {memory.evidence_links.map((ev, evIdx) => (
+                  <div
+                    key={ev.id || evIdx}
+                    className="p-3 rounded-2xl bg-purple-50/70 dark:bg-surface-container-high/60 border border-purple-100 dark:border-outline-variant/30 space-y-1"
+                  >
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-purple-700 dark:text-primary">
+                      <span>Evidence #{evIdx + 1}</span>
+                      {ev.extracted_at && (
+                        <span className="text-gray-400 dark:text-outline font-normal">
+                          {new Date(ev.extracted_at).toLocaleDateString([], {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm italic text-gray-700 dark:text-on-surface-variant leading-relaxed">
+                      "{ev.exact_source_span}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : quoteSpan ? (
             <div className="p-4 rounded-2xl bg-purple-50/70 dark:bg-surface-container-high/60 border border-purple-100 dark:border-outline-variant/30 space-y-2">
               <span className="text-[11px] font-semibold text-purple-700 dark:text-primary flex items-center gap-1.5">
                 <Volume2 className="w-3.5 h-3.5" />
@@ -74,7 +104,7 @@ export default function EvidenceModal({
                 "{quoteSpan}"
               </p>
             </div>
-          )}
+          ) : null}
 
           <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-on-surface-variant">
             <ShieldCheck className="w-4 h-4 text-emerald-500" />

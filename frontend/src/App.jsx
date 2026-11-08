@@ -240,7 +240,7 @@ export default function App() {
   const activeSession = sessions.find((s) => s.id === activeSessionId);
 
   return (
-    <div className="bg-[#FAF8F5] dark:bg-surface text-gray-900 dark:text-on-surface min-h-screen flex flex-col font-sans antialiased relative overflow-hidden transition-colors duration-300">
+    <div className="bg-[#FAF8F5] dark:bg-surface text-gray-900 dark:text-on-surface h-screen max-h-screen w-screen max-w-[100vw] overflow-hidden flex flex-col font-sans antialiased relative transition-colors duration-300">
       {/* Ambient Luminous Mist Backdrops */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute -top-32 -left-20 w-[30rem] h-[30rem] bg-purple-200/50 dark:bg-primary-container/10 rounded-full blur-3xl"></div>
@@ -263,7 +263,7 @@ export default function App() {
       />
 
       {/* 2. MAIN LAYOUT (Left Sessions Sidebar + Centered Chat View) */}
-      <div className="relative z-10 flex-1 flex h-[calc(100vh-3.75rem)] overflow-hidden">
+      <div className="relative z-10 flex-1 min-h-0 flex overflow-hidden">
         {/* Left Side Sessions Sidebar */}
         <SessionSidebar
           sessions={sessions}
@@ -273,15 +273,17 @@ export default function App() {
           memoryCount={memories.length}
           currentUser={currentUser}
           isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
 
         {/* Center: Main Dialogue Canvas */}
-        <main className="flex-1 flex flex-col h-full overflow-hidden bg-transparent">
+        <main className="flex-1 min-h-0 flex flex-col h-full overflow-hidden bg-transparent">
           <ChatPanel
             turns={turns}
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
             activeSessionTitle={activeSession?.title}
+            memories={memories}
           />
         </main>
       </div>
