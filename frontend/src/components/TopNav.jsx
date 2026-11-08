@@ -11,13 +11,10 @@ import {
   Sun,
   Moon,
   Trash2,
+  PanelLeft,
 } from "lucide-react";
 
 export default function TopNav({
-  sessions,
-  activeSessionId,
-  onSelectSession,
-  onCreateSession,
   memoryCount = 0,
   onClearMemories,
   currentUser = null,
@@ -27,6 +24,7 @@ export default function TopNav({
   isDrawerOpen = false,
   isDarkMode = false,
   onToggleTheme,
+  onToggleSidebar,
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const menuRef = useRef(null);
@@ -52,14 +50,26 @@ export default function TopNav({
   };
 
   return (
-    <header className="w-full px-6 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30 bg-white/75 dark:bg-surface-container-lowest/80 backdrop-blur-xl border-b border-purple-100/70 dark:border-outline-variant/20 shadow-xs transition-colors">
-      {/* Brand & Serene Pulse Core */}
-      <div className="flex items-center space-x-3.5">
-        <div className="relative flex items-center justify-center w-8 h-8">
-          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-400 shadow-md shadow-purple-500/40 animate-pulse"></div>
-          <div className="absolute inset-0 rounded-full border border-purple-300/40 animate-ping opacity-25"></div>
-        </div>
-        <div>
+    <header className="w-full px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30 bg-white/80 dark:bg-surface-container-lowest/80 backdrop-blur-xl border-b border-purple-100/70 dark:border-outline-variant/20 shadow-xs transition-colors">
+      {/* Left: Sidebar Toggle & Brand */}
+      <div className="flex items-center space-x-3">
+        {/* Toggle Left Sessions Sidebar */}
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="p-1.5 rounded-xl hover:bg-purple-50 dark:hover:bg-surface-container text-gray-500 hover:text-gray-900 dark:hover:text-on-surface transition-colors"
+            title="Toggle Sessions Sidebar"
+          >
+            <PanelLeft className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Brand & Serene Pulse Core */}
+        <div className="flex items-center space-x-2.5">
+          <div className="relative flex items-center justify-center w-8 h-8">
+            <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-400 shadow-md shadow-purple-500/40 animate-pulse"></div>
+            <div className="absolute inset-0 rounded-full border border-purple-300/40 animate-ping opacity-25"></div>
+          </div>
           <div className="flex items-center space-x-2">
             <span className="font-serif text-2xl font-semibold tracking-tight text-gray-900 dark:text-on-surface">
               Echo
@@ -70,36 +80,6 @@ export default function TopNav({
           </div>
         </div>
       </div>
-
-      {/* Center: Fluid Session Switcher Tabs */}
-      <nav className="hidden md:flex items-center space-x-1 bg-purple-50/60 dark:bg-surface-container/60 p-1 rounded-full border border-purple-100/80 dark:border-outline-variant/30 backdrop-blur-md">
-        {sessions.map((sess, idx) => {
-          const isActive = sess.id === activeSessionId;
-          return (
-            <button
-              key={sess.id}
-              onClick={() => onSelectSession(sess.id)}
-              className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                isActive
-                  ? "bg-white dark:bg-surface-container-high text-purple-900 dark:text-primary font-semibold shadow-xs border border-purple-100 dark:border-outline-variant/40"
-                  : "text-gray-500 dark:text-on-surface-variant hover:text-gray-800 dark:hover:text-on-surface hover:bg-white/60"
-              }`}
-            >
-              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>}
-              <span className="truncate max-w-[140px]">{sess.title || `Session ${idx + 1}`}</span>
-            </button>
-          );
-        })}
-
-        {/* New Session Button */}
-        <button
-          onClick={onCreateSession}
-          className="flex items-center space-x-1 px-3 py-1.5 rounded-full text-xs font-medium text-gray-500 dark:text-on-surface-variant hover:text-purple-700 dark:hover:text-primary transition-colors hover:bg-white/50"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>New</span>
-        </button>
-      </nav>
 
       {/* Right Side: On-Demand Memory Drawer Trigger & Profile */}
       <div className="flex items-center space-x-2.5">

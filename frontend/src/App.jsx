@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import TopNav from "./components/TopNav";
+import SessionSidebar from "./components/SessionSidebar";
 import ChatPanel from "./components/ChatPanel";
 import MemoryInspector from "./components/MemoryInspector";
 import EvidenceModal from "./components/EvidenceModal";
@@ -26,6 +27,9 @@ export default function App() {
 
   // Luminous Light Mode by default for a serene, uncluttered look
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Sessions sidebar toggle
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // On-demand drawers and modals (Touch-to-reveal)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -216,13 +220,6 @@ export default function App() {
     }
   };
 
-  // Handle touch on a recalled memory citation pill in chat
-  const handleSelectEvidenceMemory = (citation) => {
-    // Find the full memory cell if available in our memories list
-    const found = memories.find((m) => m.id === citation.id);
-    setActiveEvidenceMemory(found || citation);
-  };
-
   const handleAuthSuccess = async (user) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
@@ -246,7 +243,6 @@ export default function App() {
     <div className="bg-[#FAF8F5] dark:bg-surface text-gray-900 dark:text-on-surface min-h-screen flex flex-col font-sans antialiased relative overflow-hidden transition-colors duration-300">
       {/* Ambient Luminous Mist Backdrops */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Soft pastel blooms for light mode */}
         <div className="absolute -top-32 -left-20 w-[30rem] h-[30rem] bg-purple-200/50 dark:bg-primary-container/10 rounded-full blur-3xl"></div>
         <div className="absolute top-1/4 -right-32 w-[32rem] h-[32rem] bg-indigo-100/60 dark:bg-tertiary/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-24 left-1/3 w-[36rem] h-[36rem] bg-pink-100/40 dark:bg-secondary-container/10 rounded-full blur-3xl"></div>
@@ -254,10 +250,6 @@ export default function App() {
 
       {/* 1. TOP BAR */}
       <TopNav
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        onSelectSession={handleSelectSession}
-        onCreateSession={handleCreateSession}
         memoryCount={memories.length}
         onClearMemories={handleClearMemories}
         currentUser={currentUser}
@@ -267,32 +259,34 @@ export default function App() {
         isDrawerOpen={isDrawerOpen}
         isDarkMode={isDarkMode}
         onToggleTheme={() => setIsDarkMode(!isDarkMode)}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      {/* 2. MAIN CENTERED CHAT VIEW */}
-      <main className="relative z-10 flex-1 flex h-[calc(100vh-4.25rem)] overflow-hidden">
-        <ChatPanel
-          turns={turns}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          activeSessionTitle={activeSession?.title}
-          onSelectEvidenceMemory={handleSelectEvidenceMemory}
+      {/* 2. MAIN LAYOUT (Left Sessions Sidebar + Centered Chat View) */}
+      <div className="relative z-10 flex-1 flex h-[calc(100vh-3.75rem)] overflow-hidden">
+        {/* Left Side Sessions Sidebar */}
+        <SessionSidebar
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          onSelectSession={handleSelectSession}
+          onCreateSession={handleCreateSession}
+          memoryCount={memories.length}
+          currentUser={currentUser}
+          isOpen={isSidebarOpen}
         />
-      </main>
 
-      {/* 3. TOUCH-TO-REVEAL EVIDENCE MODAL */}
-      <EvidenceModal
-        memory={activeEvidenceMemory}
-        isOpen={!!activeEvidenceMemory}
-        onClose={() => setActiveEvidenceMemory(null)}
-        onDelete={handleDeleteMemory}
-        onOpenDrawer={() => {
-          setActiveEvidenceMemory(null);
-          setIsDrawerOpen(true);
-        }}
-      />
+        {/* Center: Main Dialogue Canvas */}
+        <main className="flex-1 flex flex-col h-full overflow-hidden bg-transparent">
+          <ChatPanel
+            turns={turns}
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            activeSessionTitle={activeSession?.title}
+          />
+        </main>
+      </div>
 
-      {/* 4. COLLAPSIBLE LIVING MEMORY DRAWER (Slides in on demand) */}
+      {/* 3. COLLAPSIBLE LIVING MEMORY DRAWER (Slides in on demand from right) */}
       <MemoryInspector
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
@@ -301,7 +295,7 @@ export default function App() {
         highlightedMemoryId={highlightedMemoryId}
       />
 
-      {/* 5. MULTI-TENANT AUTH MODAL */}
+      {/* 4. MULTI-TENANT AUTH MODAL */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={currentUser ? () => setIsAuthModalOpen(false) : null}
