@@ -1,5 +1,18 @@
-import React from "react";
-import { Sparkles, CheckCircle2, Plus, CloudCheck, Settings2, Trash2, History, Radio } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Sparkles,
+  CheckCircle2,
+  Plus,
+  CloudCheck,
+  Settings2,
+  Trash2,
+  Radio,
+  User,
+  LogOut,
+  UserCheck,
+  ChevronDown,
+  LogIn,
+} from "lucide-react";
 
 export default function TopNav({
   sessions,
@@ -9,9 +22,35 @@ export default function TopNav({
   memoryCount = 0,
   onClearMemories,
   isSyncing = false,
+  currentUser = null,
+  onOpenAuthModal,
+  onLogout,
 }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const getInitials = (name) => {
+    if (!name) return "U";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
-    <header className="w-full px-6 py-3 flex items-center justify-between sticky top-0 z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/20 shadow-sm transition-all">
+    <header className="w-full px-6 py-3 flex items-center justify-between sticky top-0 z-40 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/20 shadow-sm transition-all">
       {/* Brand Identity with Glowing Living Status Core */}
       <div className="flex items-center gap-4">
         <div className="relative flex items-center justify-center w-9 h-9">
@@ -105,18 +144,73 @@ export default function TopNav({
 
         <div className="h-5 w-px bg-outline-variant/30"></div>
 
-        {/* Profile Avatar */}
-        <div className="flex items-center gap-2 pl-1">
-          <div className="w-8 h-8 rounded-full ring-1 ring-primary/40 p-0.5 bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center text-xs font-bold text-surface">
-            AM
+        {/* User Account & Profile Cluster */}
+        {currentUser ? (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center gap-2 pl-1 py-1 pr-2 rounded-full hover:bg-surface-container-high/50 transition-all cursor-pointer group"
+            >
+              <div className="w-8 h-8 rounded-full ring-1 ring-primary/40 p-0.5 bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center text-xs font-bold text-surface shadow-sm">
+                {getInitials(currentUser.display_name)}
+              </div>
+              <div className="hidden xl:flex flex-col text-left">
+                <span className="text-body-sm font-semibold text-on-surface leading-tight">
+                  {currentUser.display_name || "User"}
+                </span>
+                <span className="text-label-sm text-on-surface-variant leading-none truncate max-w-[130px]">
+                  {currentUser.email || "Active User"}
+                </span>
+              </div>
+              <ChevronDown className={`w-3.5 h-3.5 text-outline transition-transform ${profileOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {/* Profile Dropdown Menu */}
+            {profileOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-surface-container-low/95 border border-outline-variant/30 rounded-2xl p-2 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="p-3 border-b border-outline-variant/20 mb-1">
+                  <p className="text-body-sm font-bold text-on-surface">{currentUser.display_name}</p>
+                  <p className="text-label-sm text-on-surface-variant truncate">{currentUser.email}</p>
+                  <span className="inline-flex items-center gap-1 mt-1 text-label-sm px-2 py-0.5 rounded-full bg-secondary/15 text-secondary">
+                    <UserCheck className="w-3 h-3" />
+                    Isolated Memory Active
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setProfileOpen(false);
+                    onOpenAuthModal();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-on-surface hover:bg-surface-container-high rounded-xl transition-colors text-left"
+                >
+                  <User className="w-4 h-4 text-primary" />
+                  <span>Switch Account / Sign In</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setProfileOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-error hover:bg-error-container/20 rounded-xl transition-colors text-left"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
           </div>
-          <div className="hidden xl:flex flex-col text-left">
-            <span className="text-body-sm font-semibold text-on-surface leading-tight">Alex M.</span>
-            <span className="text-label-sm text-on-surface-variant leading-none">GATE Aspirant</span>
-          </div>
-        </div>
+        ) : (
+          <button
+            onClick={onOpenAuthModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 text-body-sm font-semibold transition-all active:scale-95"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>Sign In</span>
+          </button>
+        )}
       </div>
     </header>
   );
 }
-

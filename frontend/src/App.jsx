@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import TopNav from "./components/TopNav";
 import ChatPanel from "./components/ChatPanel";
 import MemoryInspector from "./components/MemoryInspector";
+import AuthModal from "./components/AuthModal";
 import {
   fetchSessions,
   createSession,
@@ -10,10 +11,19 @@ import {
   fetchMemories,
   deleteMemory,
   clearAllMemories,
+  getStoredAuth,
+  clearStoredAuth,
+  demoLogin,
   DEFAULT_USER_ID,
 } from "./api";
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    const auth = getStoredAuth();
+    return auth ? auth.user : null;
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [turns, setTurns] = useState([]);
@@ -22,48 +32,66 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [highlightedMemoryId, setHighlightedMemoryId] = useState(null);
 
-  // Load Sessions & Memories on mount
-  const refreshMemories = useCallback(async () => {
+  // Load Memories for the active user
+  const refreshMemories = useCallback(async (userId) => {
+    if (!userId) return;
     try {
-      const data = await fetchMemories(DEFAULT_USER_ID);
+      const data = await fetchMemories(userId);
       setMemories(data);
     } catch (err) {
       console.warn("Could not fetch memories:", err);
     }
   }, []);
 
-  useEffect(() => {
-    async function init() {
-      setIsSyncing(true);
-      try {
-        // Fetch sessions
-        const sessionList = await fetchSessions(DEFAULT_USER_ID);
-        setSessions(sessionList);
+  // Load Sessions & initial Turns for a user
+  const loadUserData = useCallback(async (user) => {
+    if (!user || !user.id) return;
+    setIsSyncing(true);
+    try {
+      const sessionList = await fetchSessions(user.id);
+      setSessions(sessionList);
 
-        if (sessionList.length > 0) {
-          const firstId = sessionList[0].id;
-          setActiveSessionId(firstId);
-          const turnData = await fetchSessionTurns(firstId);
-          setTurns(turnData);
-        } else {
-          // Auto create Session 1
-          const newSess = await createSession(DEFAULT_USER_ID, "Session 1: Introduction & Goals");
-          setSessions([newSess]);
-          setActiveSessionId(newSess.id);
-          setTurns([]);
-        }
-
-        // Fetch memories
-        await refreshMemories();
-      } catch (err) {
-        console.error("Initialization error:", err);
-      } finally {
-        setIsSyncing(false);
+      if (sessionList.length > 0) {
+        const firstId = sessionList[0].id;
+        setActiveSessionId(firstId);
+        const turnData = await fetchSessionTurns(firstId);
+        setTurns(turnData);
+      } else {
+        // Auto create initial Session 1 for this user
+        const newSess = await createSession(user.id, "Session 1: Getting Started");
+        setSessions([newSess]);
+        setActiveSessionId(newSess.id);
+        setTurns([]);
       }
-    }
 
-    init();
+      await refreshMemories(user.id);
+    } catch (err) {
+      console.error("Error loading user data:", err);
+    } finally {
+      setIsSyncing(false);
+    }
   }, [refreshMemories]);
+
+  // Initial mount: load user or auto-login with demo account
+  useEffect(() => {
+    async function initAuth() {
+      let activeUser = currentUser;
+      if (!activeUser) {
+        try {
+          // One-click evaluation preset default
+          const res = await demoLogin();
+          activeUser = res.user;
+          setCurrentUser(activeUser);
+        } catch (e) {
+          console.warn("Demo auto-login failed, opening auth modal:", e);
+          setIsAuthModalOpen(true);
+          return;
+        }
+      }
+      await loadUserData(activeUser);
+    }
+    initAuth();
+  }, [loadUserData]);
 
   // Switch Active Session
   const handleSelectSession = async (sessionId) => {
@@ -79,10 +107,14 @@ export default function App() {
 
   // Create New Session
   const handleCreateSession = async () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     const nextNum = sessions.length + 1;
     const title = nextNum === 2 ? "Session 2: Technical Deep-Dive" : `Session ${nextNum}: Follow-up`;
     try {
-      const newSess = await createSession(DEFAULT_USER_ID, title);
+      const newSess = await createSession(currentUser.id, title);
       setSessions((prev) => [newSess, ...prev]);
       setActiveSessionId(newSess.id);
       setTurns([]);
@@ -124,7 +156,9 @@ export default function App() {
       setTurns((prev) => [...prev, assistantTurn]);
 
       // Refresh memory inspector to reflect newly extracted / reinforced memories
-      await refreshMemories();
+      if (currentUser) {
+        await refreshMemories(currentUser.id);
+      }
     } catch (err) {
       console.error("Error sending message:", err);
       const errorTurn = {
@@ -151,13 +185,19 @@ export default function App() {
     }
   };
 
-  // Reset / Clear All Memories
+  // Reset / Clear All Memories for current user
   const handleClearMemories = async () => {
-    if (!window.confirm("Are you sure you want to clear all active memories for Alex M.? This will reset long-term memory for demonstration purposes.")) {
+    if (!currentUser) return;
+    const confirmName = currentUser.display_name || "the current user";
+    if (
+      !window.confirm(
+        `Are you sure you want to clear all active memories for ${confirmName}? This will reset long-term memory for demonstration purposes.`
+      )
+    ) {
       return;
     }
     try {
-      await clearAllMemories(DEFAULT_USER_ID);
+      await clearAllMemories(currentUser.id);
       setMemories([]);
     } catch (err) {
       console.error("Failed to clear memories:", err);
@@ -174,6 +214,25 @@ export default function App() {
     setTimeout(() => {
       setHighlightedMemoryId(null);
     }, 3000);
+  };
+
+  // Handle successful Auth (Login / Register / Demo)
+  const handleAuthSuccess = async (user) => {
+    setCurrentUser(user);
+    setIsAuthModalOpen(false);
+    setTurns([]);
+    setSessions([]);
+    await loadUserData(user);
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    clearStoredAuth();
+    setCurrentUser(null);
+    setSessions([]);
+    setTurns([]);
+    setMemories([]);
+    setIsAuthModalOpen(true);
   };
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
@@ -197,6 +256,9 @@ export default function App() {
         memoryCount={memories.length}
         onClearMemories={handleClearMemories}
         isSyncing={isSyncing}
+        currentUser={currentUser}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* 2. MAIN SPLIT-SCREEN WORKSPACE */}
@@ -217,6 +279,13 @@ export default function App() {
           highlightedMemoryId={highlightedMemoryId}
         />
       </main>
+
+      {/* 3. AUTHENTICATION & MULTI-TENANT MODAL */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={currentUser ? () => setIsAuthModalOpen(false) : null}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

@@ -2,13 +2,18 @@
 Central configuration for the Memory Engine.
 Designed for 100% $0 Free-Tier operation with zero paid dependencies.
 """
+import os
 from functools import lru_cache
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_backend_env = Path(__file__).resolve().parent.parent / ".env"
+_root_env = Path(__file__).resolve().parent.parent.parent / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(_backend_env, _root_env, ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )

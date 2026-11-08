@@ -135,3 +135,17 @@ Tests:
 4. Orthogonal two-track retrieval (formatting preferences retrieved for technical queries).
 5. Negative constraint handling ("Never do X").
 6. Right-to-be-forgotten instant retrieval eviction.
+
+---
+
+## Authentication & Multi-Tenant Isolation
+
+The system features complete multi-tenant memory isolation backed by Neon PostgreSQL:
+- **JWT Authentication (`HS256`)**: Secure bearer tokens with salted bcrypt password hashing.
+- **1-Click Evaluation Mode**: Evaluators and graders can jump in as `Alex M.` with pre-seeded cross-session memories.
+- **Account Creation**: Users can create isolated accounts where conversation sessions and extracted memory vectors never leak across tenant boundaries.
+- **Automated Auth Test**:
+```bash
+python backend/test_auth_flow.py
+```
+
