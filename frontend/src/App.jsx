@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import TopNav from "./components/TopNav";
 import ChatPanel from "./components/ChatPanel";
 import MemoryInspector from "./components/MemoryInspector";
+import EvidenceModal from "./components/EvidenceModal";
 import AuthModal from "./components/AuthModal";
 import {
   fetchSessions,
@@ -14,7 +15,6 @@ import {
   getStoredAuth,
   clearStoredAuth,
   demoLogin,
-  DEFAULT_USER_ID,
 } from "./api";
 
 export default function App() {
@@ -24,15 +24,31 @@ export default function App() {
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  // Luminous Light Mode by default for a serene, uncluttered look
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // On-demand drawers and modals (Touch-to-reveal)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeEvidenceMemory, setActiveEvidenceMemory] = useState(null);
+
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [turns, setTurns] = useState([]);
   const [memories, setMemories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [highlightedMemoryId, setHighlightedMemoryId] = useState(null);
 
-  // Load Memories for the active user
+  // Sync dark class on documentElement
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkMode) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
+  // Load Memories for active user
   const refreshMemories = useCallback(async (userId) => {
     if (!userId) return;
     try {
@@ -43,34 +59,33 @@ export default function App() {
     }
   }, []);
 
-  // Load Sessions & initial Turns for a user
-  const loadUserData = useCallback(async (user) => {
-    if (!user || !user.id) return;
-    setIsSyncing(true);
-    try {
-      const sessionList = await fetchSessions(user.id);
-      setSessions(sessionList);
+  // Load Sessions & Turns for user
+  const loadUserData = useCallback(
+    async (user) => {
+      if (!user || !user.id) return;
+      try {
+        const sessionList = await fetchSessions(user.id);
+        setSessions(sessionList);
 
-      if (sessionList.length > 0) {
-        const firstId = sessionList[0].id;
-        setActiveSessionId(firstId);
-        const turnData = await fetchSessionTurns(firstId);
-        setTurns(turnData);
-      } else {
-        // Auto create initial Session 1 for this user
-        const newSess = await createSession(user.id, "Session 1: Getting Started");
-        setSessions([newSess]);
-        setActiveSessionId(newSess.id);
-        setTurns([]);
+        if (sessionList.length > 0) {
+          const firstId = sessionList[0].id;
+          setActiveSessionId(firstId);
+          const turnData = await fetchSessionTurns(firstId);
+          setTurns(turnData);
+        } else {
+          const newSess = await createSession(user.id, "Session 1: Introduction & Goals");
+          setSessions([newSess]);
+          setActiveSessionId(newSess.id);
+          setTurns([]);
+        }
+
+        await refreshMemories(user.id);
+      } catch (err) {
+        console.error("Error loading user data:", err);
       }
-
-      await refreshMemories(user.id);
-    } catch (err) {
-      console.error("Error loading user data:", err);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [refreshMemories]);
+    },
+    [refreshMemories]
+  );
 
   // Initial mount: load user or auto-login with demo account
   useEffect(() => {
@@ -78,7 +93,6 @@ export default function App() {
       let activeUser = currentUser;
       if (!activeUser) {
         try {
-          // One-click evaluation preset default
           const res = await demoLogin();
           activeUser = res.user;
           setCurrentUser(activeUser);
@@ -112,7 +126,8 @@ export default function App() {
       return;
     }
     const nextNum = sessions.length + 1;
-    const title = nextNum === 2 ? "Session 2: Technical Deep-Dive" : `Session ${nextNum}: Follow-up`;
+    const title =
+      nextNum === 2 ? "Session 2: Technical Deep-Dive" : `Session ${nextNum}: Follow-up`;
     try {
       const newSess = await createSession(currentUser.id, title);
       setSessions((prev) => [newSess, ...prev]);
@@ -127,7 +142,6 @@ export default function App() {
   const handleSendMessage = async (text) => {
     if (!activeSessionId) return;
 
-    // Optimistically add User Turn
     const optimisticUserTurn = {
       id: "optimistic-" + Date.now(),
       speaker_type: "OWNER",
@@ -141,7 +155,6 @@ export default function App() {
     try {
       const resp = await sendChatMessage(activeSessionId, text);
 
-      // Add Assistant Turn
       const assistantTurn = {
         id: resp.turn_id || "resp-" + Date.now(),
         speaker_type: "AGENT",
@@ -155,7 +168,6 @@ export default function App() {
 
       setTurns((prev) => [...prev, assistantTurn]);
 
-      // Refresh memory inspector to reflect newly extracted / reinforced memories
       if (currentUser) {
         await refreshMemories(currentUser.id);
       }
@@ -185,7 +197,7 @@ export default function App() {
     }
   };
 
-  // Reset / Clear All Memories for current user
+  // Reset / Clear All Memories
   const handleClearMemories = async () => {
     if (!currentUser) return;
     const confirmName = currentUser.display_name || "the current user";
@@ -204,19 +216,13 @@ export default function App() {
     }
   };
 
-  // Highlight Memory from Citation Click
-  const handleHighlightMemory = (memoryId) => {
-    setHighlightedMemoryId(memoryId);
-    const element = document.getElementById(`memory-${memoryId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-    setTimeout(() => {
-      setHighlightedMemoryId(null);
-    }, 3000);
+  // Handle touch on a recalled memory citation pill in chat
+  const handleSelectEvidenceMemory = (citation) => {
+    // Find the full memory cell if available in our memories list
+    const found = memories.find((m) => m.id === citation.id);
+    setActiveEvidenceMemory(found || citation);
   };
 
-  // Handle successful Auth (Login / Register / Demo)
   const handleAuthSuccess = async (user) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
@@ -225,7 +231,6 @@ export default function App() {
     await loadUserData(user);
   };
 
-  // Handle Logout
   const handleLogout = () => {
     clearStoredAuth();
     setCurrentUser(null);
@@ -238,16 +243,16 @@ export default function App() {
   const activeSession = sessions.find((s) => s.id === activeSessionId);
 
   return (
-    <div className="bg-surface text-on-surface min-h-screen flex flex-col font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container relative overflow-x-hidden">
-      {/* Ambient Obsidian & Aurora Lighting Blooms */}
+    <div className="bg-[#FAF8F5] dark:bg-surface text-gray-900 dark:text-on-surface min-h-screen flex flex-col font-sans antialiased relative overflow-hidden transition-colors duration-300">
+      {/* Ambient Luminous Mist Backdrops */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-[650px] h-[650px] rounded-full bg-primary-container/10 blur-[130px]"></div>
-        <div className="absolute top-1/4 -right-40 w-[550px] h-[550px] rounded-full bg-tertiary/10 blur-[120px]"></div>
-        <div className="absolute -bottom-40 left-1/3 w-[700px] h-[700px] rounded-full bg-secondary-container/10 blur-[140px]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.12),rgba(255,255,255,0))]"></div>
+        {/* Soft pastel blooms for light mode */}
+        <div className="absolute -top-32 -left-20 w-[30rem] h-[30rem] bg-purple-200/50 dark:bg-primary-container/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/4 -right-32 w-[32rem] h-[32rem] bg-indigo-100/60 dark:bg-tertiary/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 left-1/3 w-[36rem] h-[36rem] bg-pink-100/40 dark:bg-secondary-container/10 rounded-full blur-3xl"></div>
       </div>
 
-      {/* 1. TOP NAVIGATION BAR */}
+      {/* 1. TOP BAR */}
       <TopNav
         sessions={sessions}
         activeSessionId={activeSessionId}
@@ -255,32 +260,48 @@ export default function App() {
         onCreateSession={handleCreateSession}
         memoryCount={memories.length}
         onClearMemories={handleClearMemories}
-        isSyncing={isSyncing}
         currentUser={currentUser}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
+        onToggleDrawer={() => setIsDrawerOpen(!isDrawerOpen)}
+        isDrawerOpen={isDrawerOpen}
+        isDarkMode={isDarkMode}
+        onToggleTheme={() => setIsDarkMode(!isDarkMode)}
       />
 
-      {/* 2. MAIN SPLIT-SCREEN WORKSPACE */}
-      <main className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 max-w-[1920px] w-full mx-auto h-[calc(100vh-4.25rem)] overflow-hidden">
-        {/* Left: Chat & Voice Interface */}
+      {/* 2. MAIN CENTERED CHAT VIEW */}
+      <main className="relative z-10 flex-1 flex h-[calc(100vh-4.25rem)] overflow-hidden">
         <ChatPanel
           turns={turns}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           activeSessionTitle={activeSession?.title}
-          onHighlightMemory={handleHighlightMemory}
-        />
-
-        {/* Right: Living Memory & Provenance Inspector */}
-        <MemoryInspector
-          memories={memories}
-          onDeleteMemory={handleDeleteMemory}
-          highlightedMemoryId={highlightedMemoryId}
+          onSelectEvidenceMemory={handleSelectEvidenceMemory}
         />
       </main>
 
-      {/* 3. AUTHENTICATION & MULTI-TENANT MODAL */}
+      {/* 3. TOUCH-TO-REVEAL EVIDENCE MODAL */}
+      <EvidenceModal
+        memory={activeEvidenceMemory}
+        isOpen={!!activeEvidenceMemory}
+        onClose={() => setActiveEvidenceMemory(null)}
+        onDelete={handleDeleteMemory}
+        onOpenDrawer={() => {
+          setActiveEvidenceMemory(null);
+          setIsDrawerOpen(true);
+        }}
+      />
+
+      {/* 4. COLLAPSIBLE LIVING MEMORY DRAWER (Slides in on demand) */}
+      <MemoryInspector
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        memories={memories}
+        onDeleteMemory={handleDeleteMemory}
+        highlightedMemoryId={highlightedMemoryId}
+      />
+
+      {/* 5. MULTI-TENANT AUTH MODAL */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={currentUser ? () => setIsAuthModalOpen(false) : null}

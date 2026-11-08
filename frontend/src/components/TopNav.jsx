@@ -1,17 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   Sparkles,
-  CheckCircle2,
   Plus,
-  CloudCheck,
-  Settings2,
-  Trash2,
   Radio,
   User,
   LogOut,
   UserCheck,
   ChevronDown,
   LogIn,
+  Sun,
+  Moon,
+  Trash2,
 } from "lucide-react";
 
 export default function TopNav({
@@ -21,10 +20,13 @@ export default function TopNav({
   onCreateSession,
   memoryCount = 0,
   onClearMemories,
-  isSyncing = false,
   currentUser = null,
   onOpenAuthModal,
   onLogout,
+  onToggleDrawer,
+  isDrawerOpen = false,
+  isDarkMode = false,
+  onToggleTheme,
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const menuRef = useRef(null);
@@ -50,128 +52,129 @@ export default function TopNav({
   };
 
   return (
-    <header className="w-full px-6 py-3 flex items-center justify-between sticky top-0 z-40 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/20 shadow-sm transition-all">
-      {/* Brand Identity with Glowing Living Status Core */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex items-center justify-center w-9 h-9">
-          <div className="absolute inset-0 rounded-full bg-secondary/20 animate-pulse-halo"></div>
-          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-secondary-container via-primary-container to-tertiary animate-breathe-core flex items-center justify-center shadow-lg shadow-secondary/30">
-            <Radio className="w-3.5 h-3.5 text-surface font-bold animate-pulse" />
-          </div>
+    <header className="w-full px-6 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30 bg-white/75 dark:bg-surface-container-lowest/80 backdrop-blur-xl border-b border-purple-100/70 dark:border-outline-variant/20 shadow-xs transition-colors">
+      {/* Brand & Serene Pulse Core */}
+      <div className="flex items-center space-x-3.5">
+        <div className="relative flex items-center justify-center w-8 h-8">
+          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-400 shadow-md shadow-purple-500/40 animate-pulse"></div>
+          <div className="absolute inset-0 rounded-full border border-purple-300/40 animate-ping opacity-25"></div>
         </div>
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <span className="text-title-md font-bold text-on-surface tracking-tight">Echo</span>
-            <span className="text-label-sm text-outline px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant/30">
-              v3.2
+        <div>
+          <div className="flex items-center space-x-2">
+            <span className="font-serif text-2xl font-semibold tracking-tight text-gray-900 dark:text-on-surface">
+              Echo
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-purple-700 dark:text-primary font-bold px-2 py-0.5 bg-purple-50 dark:bg-primary-container/20 rounded-full border border-purple-200/50 dark:border-primary/30">
+              Luminous
             </span>
           </div>
-          <span className="text-body-sm text-on-surface-variant flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-secondary inline-block animate-ping"></span>
-            Adaptive Voice Agent
-          </span>
-        </div>
-
-        {/* Memory Core Active Pill */}
-        <div className="hidden xl:flex items-center gap-2 ml-3 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/25">
-          <span className="w-2 h-2 rounded-full bg-secondary"></span>
-          <span className="font-label-sm text-secondary font-medium tracking-wide">
-            Memory Core Active • {memoryCount} Grounded Facts
-          </span>
         </div>
       </div>
 
-      {/* Center: Fluid Session Switcher Pill Tabs */}
-      <nav className="hidden md:flex items-center gap-1 bg-surface-container-low/90 p-1 rounded-full border border-outline-variant/30 max-w-xl overflow-x-auto">
+      {/* Center: Fluid Session Switcher Tabs */}
+      <nav className="hidden md:flex items-center space-x-1 bg-purple-50/60 dark:bg-surface-container/60 p-1 rounded-full border border-purple-100/80 dark:border-outline-variant/30 backdrop-blur-md">
         {sessions.map((sess, idx) => {
           const isActive = sess.id === activeSessionId;
           return (
             <button
               key={sess.id}
               onClick={() => onSelectSession(sess.id)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full transition-all text-body-sm font-medium whitespace-nowrap ${
+              className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
                 isActive
-                  ? "bg-surface-container-high/90 text-primary border-b-2 border-primary shadow-sm"
-                  : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container/40"
+                  ? "bg-white dark:bg-surface-container-high text-purple-900 dark:text-primary font-semibold shadow-xs border border-purple-100 dark:border-outline-variant/40"
+                  : "text-gray-500 dark:text-on-surface-variant hover:text-gray-800 dark:hover:text-on-surface hover:bg-white/60"
               }`}
             >
-              {idx === 0 && <CheckCircle2 className="w-3.5 h-3.5 text-secondary" />}
-              {isActive && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
-              <span className="truncate max-w-[150px]">{sess.title || `Session ${idx + 1}`}</span>
-              {isActive && (
-                <span className="px-1.5 py-0.2 bg-primary/20 text-primary-fixed rounded text-label-sm ml-1">
-                  Live
-                </span>
-              )}
+              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>}
+              <span className="truncate max-w-[140px]">{sess.title || `Session ${idx + 1}`}</span>
             </button>
           );
         })}
 
-        {/* New Session CTA */}
+        {/* New Session Button */}
         <button
           onClick={onCreateSession}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface border border-dashed border-outline-variant/40 hover:border-primary/40 transition-colors text-body-sm whitespace-nowrap"
+          className="flex items-center space-x-1 px-3 py-1.5 rounded-full text-xs font-medium text-gray-500 dark:text-on-surface-variant hover:text-purple-700 dark:hover:text-primary transition-colors hover:bg-white/50"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>+ New Session</span>
+          <span>New</span>
         </button>
       </nav>
 
-      {/* Right Side Actions & Profile Cluster */}
-      <div className="flex items-center gap-3">
-        {/* Synced to Edge status */}
-        <div className="hidden lg:flex items-center gap-1.5 text-label-sm text-tertiary bg-tertiary/10 px-2.5 py-1 rounded-full border border-tertiary/20">
-          <CloudCheck className="w-3.5 h-3.5" />
-          <span>{isSyncing ? "Syncing Neon..." : "Synced to Edge"}</span>
-        </div>
-
-        {/* Audio Routing */}
+      {/* Right Side: On-Demand Memory Drawer Trigger & Profile */}
+      <div className="flex items-center space-x-2.5">
+        {/* On-Demand Living Memory Drawer Trigger Pill */}
         <button
-          className="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/40 transition-all active:scale-95"
-          title="Audio Input Routing: Lossless 48kHz"
+          onClick={onToggleDrawer}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-2 transition-all cursor-pointer shadow-xs active:scale-95 ${
+            isDrawerOpen
+              ? "bg-purple-600 text-white shadow-purple-500/25"
+              : "bg-white/80 dark:bg-surface-container text-purple-900 dark:text-primary border border-purple-200/80 dark:border-outline-variant/40 hover:bg-purple-50 dark:hover:bg-surface-container-high"
+          }`}
+          title="Touch to reveal Living Memory Drawer"
         >
-          <Settings2 className="w-4 h-4" />
+          <span className="font-serif text-sm">✦</span>
+          <span>Living Memory</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              isDrawerOpen
+                ? "bg-white/20 text-white"
+                : "bg-purple-100 dark:bg-primary/20 text-purple-700 dark:text-primary"
+            }`}
+          >
+            {memoryCount}
+          </span>
         </button>
 
-        {/* Destructive Clear Memories Action */}
+        {/* Theme Mode Toggle (Luminous Light ↔ Obsidian Dark) */}
+        <button
+          onClick={onToggleTheme}
+          className="w-8 h-8 rounded-full bg-white/80 dark:bg-surface-container hover:bg-purple-50 dark:hover:bg-surface-container-high border border-purple-100 dark:border-outline-variant/30 flex items-center justify-center text-gray-500 dark:text-on-surface-variant hover:text-purple-700 dark:hover:text-primary transition-all shadow-xs"
+          title={isDarkMode ? "Switch to Luminous Light Mode" : "Switch to Obsidian Dark Mode"}
+        >
+          {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-purple-600" />}
+        </button>
+
+        {/* Clear Buffer Action */}
         <button
           onClick={onClearMemories}
-          className="p-2 rounded-lg text-outline hover:text-error hover:bg-error-container/20 transition-all active:scale-95 group"
-          title="Clear Memory Buffer (Reset)"
+          className="w-8 h-8 rounded-full hover:bg-rose-50 dark:hover:bg-error-container/20 text-gray-400 hover:text-rose-500 transition-colors flex items-center justify-center"
+          title="Reset / Clear all active memories for current user"
         >
-          <Trash2 className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
 
-        <div className="h-5 w-px bg-outline-variant/30"></div>
+        <div className="h-5 w-px bg-purple-100 dark:bg-outline-variant/30"></div>
 
-        {/* User Account & Profile Cluster */}
+        {/* User Profile Pill */}
         {currentUser ? (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-2 pl-1 py-1 pr-2 rounded-full hover:bg-surface-container-high/50 transition-all cursor-pointer group"
+              className="flex items-center space-x-2 p-1 pr-2 rounded-full hover:bg-white/90 dark:hover:bg-surface-container-high transition-all cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full ring-1 ring-primary/40 p-0.5 bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center text-xs font-bold text-surface shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 text-white font-bold text-xs flex items-center justify-center shadow-xs">
                 {getInitials(currentUser.display_name)}
               </div>
-              <div className="hidden xl:flex flex-col text-left">
-                <span className="text-body-sm font-semibold text-on-surface leading-tight">
+              <div className="text-left hidden sm:block">
+                <p className="text-xs font-semibold text-gray-800 dark:text-on-surface leading-tight">
                   {currentUser.display_name || "User"}
-                </span>
-                <span className="text-label-sm text-on-surface-variant leading-none truncate max-w-[130px]">
-                  {currentUser.email || "Active User"}
-                </span>
+                </p>
               </div>
-              <ChevronDown className={`w-3.5 h-3.5 text-outline transition-transform ${profileOpen ? "rotate-180" : ""}`} />
+              <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
 
-            {/* Profile Dropdown Menu */}
+            {/* Profile Dropdown */}
             {profileOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-surface-container-low/95 border border-outline-variant/30 rounded-2xl p-2 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="p-3 border-b border-outline-variant/20 mb-1">
-                  <p className="text-body-sm font-bold text-on-surface">{currentUser.display_name}</p>
-                  <p className="text-label-sm text-on-surface-variant truncate">{currentUser.email}</p>
-                  <span className="inline-flex items-center gap-1 mt-1 text-label-sm px-2 py-0.5 rounded-full bg-secondary/15 text-secondary">
+              <div className="absolute right-0 mt-2 w-64 bg-white/95 dark:bg-surface-container-low/95 border border-purple-100 dark:border-outline-variant/30 rounded-2xl p-2 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="p-3 border-b border-purple-100/80 dark:border-outline-variant/20 mb-1">
+                  <p className="text-xs font-bold text-gray-900 dark:text-on-surface">
+                    {currentUser.display_name}
+                  </p>
+                  <p className="text-[11px] text-gray-500 dark:text-on-surface-variant truncate">
+                    {currentUser.email}
+                  </p>
+                  <span className="inline-flex items-center gap-1 mt-1 text-[10px] px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-primary/20 text-purple-700 dark:text-primary font-medium">
                     <UserCheck className="w-3 h-3" />
                     Isolated Memory Active
                   </span>
@@ -182,9 +185,9 @@ export default function TopNav({
                     setProfileOpen(false);
                     onOpenAuthModal();
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-on-surface hover:bg-surface-container-high rounded-xl transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-on-surface hover:bg-purple-50 dark:hover:bg-surface-container-high rounded-xl transition-colors text-left"
                 >
-                  <User className="w-4 h-4 text-primary" />
+                  <User className="w-3.5 h-3.5 text-purple-600 dark:text-primary" />
                   <span>Switch Account / Sign In</span>
                 </button>
 
@@ -193,9 +196,9 @@ export default function TopNav({
                     setProfileOpen(false);
                     onLogout();
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-error hover:bg-error-container/20 rounded-xl transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-error-container/20 rounded-xl transition-colors text-left"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                   <span>Sign Out</span>
                 </button>
               </div>
@@ -204,9 +207,9 @@ export default function TopNav({
         ) : (
           <button
             onClick={onOpenAuthModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 text-body-sm font-semibold transition-all active:scale-95"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-all active:scale-95"
           >
-            <LogIn className="w-4 h-4" />
+            <LogIn className="w-3.5 h-3.5" />
             <span>Sign In</span>
           </button>
         )}
