@@ -2,7 +2,15 @@
 
 An evidence-grounded conversational voice agent that maintains long-term conversational memory across multiple sessions with $0 free-tier infrastructure.
 
-![Echo UI Preview](docs/preview_stitch_ui.png)
+![Echo Luminous Sanctuary Interface](docs/preview_luminous_ui.png)
+
+---
+
+## Interactive Interface Showcase
+
+| "What I remember" Living Memory Drawer | Hover / Touch Evidence Provenance Popover |
+| :---: | :---: |
+| ![Living Memory Drawer](docs/preview_drawer_open.png) | ![Evidence Popover](docs/preview_evidence_popover.png) |
 
 ---
 
@@ -10,25 +18,27 @@ An evidence-grounded conversational voice agent that maintains long-term convers
 
 1. **Evidence-Grounded Canonical Memory Extraction (Stage I)**:
    - Disentangles heterogeneous dialogue turns into third-person canonical propositions.
-   - Automatically rejects conversational filler/small-talk (100% precision).
-   - Every memory is strictly bound to a verbatim source quote span from the conversation turn.
+   - Automatically rejects conversational filler and small-talk with zero false positives.
+   - Every single memory proposition is strictly grounded with a verbatim source quote span extracted from the user's spoken utterance.
 
-2. **Semantic Association & Deduplication (Stage II)**:
-   - Prevents database bloat through normalized text key matching and vector cosine similarity.
-   - Domain-knowledge semantic reconciliation (e.g., recognizes that 21 km is a half marathon, winter is December) to increment reinforcement counters (`support_count`) and attach `Evidence #2` links without creating duplicate rows.
+2. **Semantic Association & Multi-Evidence Deduplication (Stage II)**:
+   - Prevents database bloat through normalized text matching and vector cosine similarity.
+   - World-knowledge semantic reconciliation (e.g. recognizes that 21 km is a half marathon, December is winter) to increment reinforcement counters (`support_count`) and stack multi-turn proofs (`Evidence #1`, `Evidence #2`) without creating duplicate records.
 
 3. **Orthogonal Two-Track Memory Retrieval**:
-   - **Track A (Rule-Based Admittance)**: Always retrieves active user preferences, behavioral guidelines, and constraints, regardless of the semantic query topic.
-   - **Track B (Associative Semantic Recall)**: Top-k cosine similarity retrieval for relevant past context.
-   - Solves the classic Naive RAG failure mode where formatting preferences are lost during technical queries.
+   - **Track A (Rule-Based Admittance)**: Always retrieves active user preferences, dietary constraints, and behavioral guidelines, regardless of the semantic query topic.
+   - **Track B (Associative Semantic Recall)**: Top-$k$ cosine similarity retrieval over past domain facts and goals.
+   - Eliminates the classic Naive RAG failure mode where formatting preferences are lost during technical domain queries.
 
-4. **Modern Obsidian Glassmorphism Workstation**:
-   - Split-screen interface created via StitchMCP.
-   - Left: Conversational voice stream with Web Speech TTS audio playback, speech-to-text mic input, undulating waveforms, and interactive recalled memory citation pills.
-   - Right: Living Memory & Provenance Inspector with category filter tabs, confidence metrics, verbatim transcript source boxes, and graph export.
+4. **Luminous Sanctuary Interface (Stitch-Designed)**:
+   - **Hover / Touch-to-Reveal Memory**: Recalled memory facts never clutter the chat forever. A delicate `✦ N Recalled` pill button appears in the message header; hovering reveals a frosted-glass flyout with full verbatim evidence quotes and disappears cleanly on mouse leave.
+   - **Collapsible "What I remember" Drawer**: Slide-over inspector displaying all active memories organized by category (`PREFERENCES`, `GOALS`, `HEALTH & DIET`, `ABOUT`), each with its complete multi-evidence stack and proof counts.
+   - **Collapsible Sessions Sidebar**: Left-hand conversation navigation with one-click new session creation, active indicators, and smooth collapse/expand transitions.
+   - **Soft Voice Engine**: Web Speech Synthesis audio playback with harmonic waveform visualizers and microphone speech-to-text input.
+   - **High-Contrast Typography**: Elegant Serif titles, high-contrast slate text, custom GFM tables for recipes and technical data, and purple-tinted highlights.
 
 5. **100% $0 Free-Tier Stack**:
-   - **LLM**: Groq Cloud Free Tier (`openai/gpt-oss-120b`).
+   - **LLM**: Groq Cloud Free Tier (`openai/gpt-oss-120b` or Llama 3.3 70B).
    - **Embeddings**: Local 384-dimensional CPU embeddings (`sentence-transformers/all-MiniLM-L6-v2`) with fast deterministic hash fallback.
    - **Database**: Free Neon.tech Cloud PostgreSQL with `pgvector(384)` (or local SQLite).
 
@@ -128,11 +138,11 @@ cd backend
 python tests/edge_case_tests.py
 ```
 
-Tests:
-1. Small-talk & conversational filler rejection (zero false positives).
+Edge-case test scenarios:
+1. Small-talk & conversational filler rejection (100% precision).
 2. Multi-proposition compound turns with verbatim source grounding.
-3. Semantic paraphrase deduplication and multi-evidence reinforcement.
-4. Orthogonal two-track retrieval (formatting preferences retrieved for technical queries).
+3. Semantic paraphrase deduplication and multi-evidence reinforcement (`Evidence #1`, `Evidence #2`).
+4. Orthogonal two-track retrieval (formatting preferences admitted during technical queries).
 5. Negative constraint handling ("Never do X").
 6. Right-to-be-forgotten instant retrieval eviction.
 
@@ -146,6 +156,6 @@ The system features complete multi-tenant memory isolation backed by Neon Postgr
 - **Account Creation**: Users can create isolated accounts where conversation sessions and extracted memory vectors never leak across tenant boundaries.
 - **Automated Auth Test**:
 ```bash
-python backend/test_auth_flow.py
+cd backend
+python tests/test_auth_flow.py
 ```
-
