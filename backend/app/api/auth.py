@@ -164,6 +164,7 @@ def login_user(
     )
 
 
+@router.post("/demo", response_model=AuthResponse)
 @router.post("/demo-login", response_model=AuthResponse)
 def demo_login(
     db: DBSession = Depends(get_db)

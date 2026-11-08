@@ -16,10 +16,12 @@ def test_full_auth_flow():
     print("TESTING AUTHENTICATION & MULTI-TENANT ISOLATION (LIVE NEON DB)")
     print("=================================================================")
 
-    # 1. Test Demo Login (Alex M.)
+    # 1. Test Demo Login (Alex M.) via both /demo and /demo-login aliases
     print("\n[STEP 1] Testing 1-Click Demo Login (Alex M.)...")
-    resp = client.post("/api/v1/auth/demo-login")
-    assert resp.status_code == 200, f"Demo login failed: {resp.text}"
+    resp = client.post("/api/v1/auth/demo")
+    assert resp.status_code == 200, f"Demo login via /demo failed: {resp.text}"
+    resp_alias = client.post("/api/v1/auth/demo-login")
+    assert resp_alias.status_code == 200, f"Demo login via /demo-login failed: {resp_alias.text}"
     demo_data = resp.json()
     demo_token = demo_data["access_token"]
     demo_user = demo_data["user"]
