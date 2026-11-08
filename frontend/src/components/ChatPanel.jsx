@@ -7,11 +7,12 @@ import {
   Play,
   Pause,
   Copy,
-  ThumbsUp,
   RotateCcw,
   Sparkles,
   CheckCircle,
-  ArrowUpRight,
+  Quote,
+  History,
+  X,
 } from "lucide-react";
 
 export default function ChatPanel({
@@ -19,17 +20,26 @@ export default function ChatPanel({
   onSendMessage,
   isLoading,
   activeSessionTitle,
-  onSelectEvidenceMemory,
 }) {
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [playingTurnId, setPlayingTurnId] = useState(null);
+  const [activePopoverCiteId, setActivePopoverCiteId] = useState(null);
   const chatEndRef = useRef(null);
 
   // Auto-scroll on new turns
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, isLoading]);
+
+  // Close popover on outside click
+  useEffect(() => {
+    function handleOutsideClick() {
+      setActivePopoverCiteId(null);
+    }
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, []);
 
   const handleSubmit = (e) => {
     e?.preventDefault();
@@ -201,7 +211,7 @@ export default function ChatPanel({
                   {/* Glass Response Container */}
                   <div className="bg-white/90 dark:bg-surface-container-high/70 border border-purple-100/90 dark:border-outline-variant/30 rounded-3xl rounded-tl-md p-6 shadow-sm hover:shadow-md transition-shadow text-gray-800 dark:text-on-surface space-y-5">
                     {/* Audio Playback Strip */}
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-purple-50/50 dark:bg-surface-container-lowest/70 border border-purple-100/80 dark:border-outline-variant/20">
+                    <div className="flex items-center justify-between p-3.5 rounded-2xl bg-purple-50/50 dark:bg-surface-container-lowest/70 border border-purple-100/80 dark:border-outline-variant/20">
                       <div className="flex items-center space-x-3">
                         <button
                           onClick={() => handlePlayVoice(turn.id, turn.raw_transcript)}
@@ -248,34 +258,84 @@ export default function ChatPanel({
                       <MarkdownRenderer content={turn.raw_transcript} />
                     </div>
 
-                    {/* INTERACTIVE TOUCH PANELS: Quiet, beautiful recalled memory pills */}
+                    {/* INTERACTIVE TOUCH PANELS: Recalled memories with Stitch floating evidence popovers */}
                     {citations.length > 0 && (
                       <div className="pt-4 border-t border-purple-100/80 dark:border-outline-variant/20">
                         <div className="flex items-center space-x-1.5 mb-2.5">
                           <Sparkles className="w-3.5 h-3.5 text-purple-500 dark:text-primary" />
                           <span className="text-[11px] font-semibold tracking-wider uppercase text-purple-600 dark:text-primary">
-                            Recalled From Long-Term Memory (Touch to Inspect)
+                            Recalled From Memory (Touch to Reveal Direct Evidence)
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
-                          {citations.map((cite, cIdx) => (
-                            <button
-                              key={cite.id || cIdx}
-                              onClick={() => onSelectEvidenceMemory && onSelectEvidenceMemory(cite)}
-                              className="group px-3 py-1.5 rounded-xl bg-purple-50/90 dark:bg-primary-container/20 hover:bg-purple-100 dark:hover:bg-primary-container/35 border border-purple-200/70 dark:border-primary/30 text-xs font-medium text-purple-900 dark:text-primary transition-all flex items-center space-x-2 shadow-xs cursor-pointer active:scale-95"
-                              title="Touch to reveal verbatim spoken quote evidence"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 group-hover:scale-125 transition-transform"></span>
-                              <span className="truncate max-w-[240px]">✦ {cite.canonical_content}</span>
-                              <ArrowUpRight className="w-3 h-3 text-purple-400 group-hover:text-purple-700 dark:text-primary transition-colors" />
-                            </button>
-                          ))}
+                        <div className="flex flex-wrap gap-2.5">
+                          {citations.map((cite, cIdx) => {
+                            const citeId = cite.id || `cite-${cIdx}`;
+                            const isPopoverOpen = activePopoverCiteId === citeId;
+                            const quoteText =
+                              cite.source_span ||
+                              cite.exact_source_span ||
+                              (cite.evidence_links && cite.evidence_links.length > 0
+                                ? cite.evidence_links[0].exact_source_span
+                                : "Mentioned in previous conversations");
+
+                            return (
+                              <div key={citeId} className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+                                {/* STITCH EVIDENCE POPOVER FLOATING CARD */}
+                                {isPopoverOpen && (
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-30 w-72 sm:w-80 p-4 rounded-2xl bg-white/95 dark:bg-surface-container-low/95 border border-purple-200/80 dark:border-outline-variant/40 backdrop-blur-2xl shadow-[0_16px_40px_rgba(143,123,232,0.22)] flex flex-col space-y-2 animate-in fade-in zoom-in-95 duration-150 text-left">
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1.5 text-purple-600 dark:text-primary font-semibold text-xs uppercase tracking-wider">
+                                        <Quote className="w-4 h-4 fill-current" />
+                                        <span>Direct Memory</span>
+                                      </div>
+                                      <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-secondary-container/20 dark:text-secondary">
+                                        Verified
+                                      </span>
+                                    </div>
+
+                                    {/* Verbatim Spoken Quote */}
+                                    <p className="text-sm font-medium text-gray-900 dark:text-on-surface leading-snug italic">
+                                      “{quoteText}”
+                                    </p>
+
+                                    {/* Provenance Tag */}
+                                    <div className="flex items-center gap-1.5 pt-1 text-[11px] text-gray-500 dark:text-on-surface-variant">
+                                      <History className="w-3.5 h-3.5 text-purple-500" />
+                                      <span>✦ Grounded from your conversation</span>
+                                    </div>
+
+                                    {/* Ethereal Downward Arrow Caret */}
+                                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white/95 dark:bg-surface-container-low/95 border-b border-r border-purple-200/80 dark:border-outline-variant/40 rotate-45"></div>
+                                  </div>
+                                )}
+
+                                {/* THE BADGE BUTTON */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActivePopoverCiteId(isPopoverOpen ? null : citeId);
+                                  }}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                                    isPopoverOpen
+                                      ? "bg-purple-600 text-white shadow-[0_0_18px_rgba(143,123,232,0.35)] ring-2 ring-purple-400"
+                                      : "bg-purple-50/90 dark:bg-primary-container/20 hover:bg-purple-100 text-purple-900 dark:text-primary border border-purple-200/70 dark:border-primary/30 shadow-xs"
+                                  }`}
+                                  title="Touch to reveal verbatim quote evidence"
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${isPopoverOpen ? "bg-white" : "bg-purple-500"}`}></span>
+                                  <span className="truncate max-w-[240px]">✦ {cite.canonical_content}</span>
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
 
-                    {/* Footer Grounding Assurance & Quiet Tools */}
+                    {/* Footer Grounding Assurance & Tools */}
                     <div className="flex items-center justify-between pt-2 text-xs text-gray-400 dark:text-outline border-t border-purple-50 dark:border-outline-variant/10">
                       <span className="flex items-center space-x-1.5 text-emerald-700 dark:text-emerald-400 font-medium">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
